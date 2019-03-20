@@ -6,6 +6,7 @@ using Raven.Client.Documents;
 using System.Linq;
 using Raven.Client.Documents.Session;
 using Raven.Client.Documents.Queries;
+using Raven.Client.Exceptions;
 
 namespace Sample.Services
 {
@@ -79,12 +80,37 @@ namespace Sample.Services
 
         public async Task<Talk> UpdateTalk(string id, UpdatedTalk talk, string version)
         {
-            throw new NotImplementedException("TODO: Implement UpdateTalk");
+            using (var session = store.OpenAsyncSession())
+            {
+                var existingTalk = await session.LoadAsync<Talk>(id);
+
+                existingTalk.Headline = talk.Headline;
+                existingTalk.Description = talk.Description;
+                existingTalk.Speaker = talk.Speaker;
+
+               try
+               {
+                    await session.StoreAsync(existingTalk, version, id);
+                    await session.SaveChangesAsync();
+                }
+               catch (ConcurrencyException cex)
+               {
+                    throw new ApplicationException("Tried to update a talk but it looks like someone else got there first! " +
+                    "Try refreshing the page. Detailed explanation: " + cex.Message, cex);
+                } 
+
+                return existingTalk;
+            }
         }
 
         public async Task<bool> DeleteTalk(string id)
         {
-            throw new NotImplementedException("TODO: Implement DeleteTalk");
+            using (var session = store.OpenAsyncSession())
+            {
+                session.Delete(id);
+                await session.SaveChangesAsync();
+                return true;
+            }
         }
 
         public async Task<SpeakerTalkStats[]> GetSpeakerTalkStats()
@@ -99,7 +125,20 @@ namespace Sample.Services
 
         public async Task<(UpdatedTalk Talk, string Version)> GetTalkForEditing(string id)
         {
-            throw new NotImplementedException("TODO: Implement GetTalkForEditing");
+            using (var session = store.OpenAsyncSession())
+            {
+                var talk = await session.LoadAsync<Talk>(id);
+                var version = session.Advanced.GetChangeVectorFor(talk);
+
+                var updatedTalk = new UpdatedTalk()
+                {
+                    Description = talk.Description,
+                    Headline = talk.Headline,
+                    Speaker = talk.Speaker
+                };
+
+                return (Talk: updatedTalk, Version: version);
+            }
         }
 
         public async Task<TalkSummary[]> GetTalkSummaries(int page = 1)
