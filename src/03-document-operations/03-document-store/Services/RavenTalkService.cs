@@ -88,16 +88,16 @@ namespace Sample.Services
                 existingTalk.Description = talk.Description;
                 existingTalk.Speaker = talk.Speaker;
 
-               try
-               {
+                try
+                {
                     await session.StoreAsync(existingTalk, version, id);
                     await session.SaveChangesAsync();
                 }
-               catch (ConcurrencyException cex)
-               {
+                catch (ConcurrencyException cex)
+                {
                     throw new ApplicationException("Tried to update a talk but it looks like someone else got there first! " +
                     "Try refreshing the page. Detailed explanation: " + cex.Message, cex);
-                } 
+                }
 
                 return existingTalk;
             }
@@ -143,7 +143,25 @@ namespace Sample.Services
 
         public async Task<TalkSummary[]> GetTalkSummaries(int page = 1)
         {
-            throw new NotImplementedException("TODO: Implement GetTalkSummaries");
+            using (var session = store.OpenAsyncSession())
+            {
+                var actualPage = Math.Max(0, page - 1);
+
+                var talks = await session.Query<Talk>()
+                                        .Skip(actualPage * Constants.PageSize)
+                                        .Take(Constants.PageSize)
+                                        .Select(talk => new TalkSummary()
+                                        {
+                                            Id = talk.Id,
+                                            Headline = talk.Headline,
+                                            Description = talk.Description,
+                                            Published = talk.Published,
+                                            Speaker = talk.Speaker,
+                                            SpeakerName = RavenQuery.Load<Speaker>(talk.Speaker).Name
+                                        })
+                                        .ToListAsync();
+                return talks.ToArray();
+            }
         }
 
         public async Task<TalkSummary[]> GetTalksBySpeaker(string speaker, int show)
