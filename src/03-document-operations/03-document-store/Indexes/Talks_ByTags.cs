@@ -2,15 +2,18 @@ using System.Linq;
 using Raven.Client.Documents.Indexes;
 using Sample.Models;
 
-public class Talks_ByTags : AbstractIndexCreationTask<Talk>
+namespace Sample.Indexes
 {
-    public Talks_ByTags()
+    public class Talks_ByTags : AbstractIndexCreationTask<Talk>
     {
-        Map = talks =>
-            from talk in talks
-            select new
-            {
-                talk.Tags
-            };
+        public Talks_ByTags()
+        {
+            Map = talks =>
+                from talk in talks
+                select new
+                {
+                    talk.Tags
+                };
+        }
     }
 }

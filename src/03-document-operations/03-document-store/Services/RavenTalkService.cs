@@ -116,7 +116,14 @@ namespace Sample.Services
 
         public async Task<SpeakerTalkStats[]> GetSpeakerTalkStats()
         {
-            throw new NotImplementedException("TODO: Implement GetSpeakerTalkStats");
+            using (var session = store.OpenAsyncSession())
+            {
+                var stats = await session.Query<SpeakerTalkStats, Talks_SpeakerStats>()
+                                         .Take(1024)
+                                         .ToListAsync();
+
+                return stats.ToArray();
+            }
         }
 
         public async Task<TagTalkStats[]> GetTagTalkStats()
