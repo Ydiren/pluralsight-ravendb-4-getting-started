@@ -150,10 +150,11 @@ namespace Sample.Services
                 QueryStatistics statistics;
                 var talks = await session.Query<Talk>()
                                         .Statistics(out statistics)
-                                        .Customize(x => {
+                                        .Customize(x =>
+                                        {
                                             // Probably not fit for production as it has negative performance effects
                                             // Good idea for unit tests though!
-                                            x.WaitForNonStaleResults()
+                                            x.WaitForNonStaleResults();
                                         })
                                         .Skip(actualPage * Constants.PageSize)
                                         .Take(Constants.PageSize)
