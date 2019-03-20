@@ -7,6 +7,7 @@ using System.Linq;
 using Raven.Client.Documents.Session;
 using Raven.Client.Documents.Queries;
 using Raven.Client.Exceptions;
+using Sample.Indexes;
 
 namespace Sample.Services
 {
@@ -174,12 +175,52 @@ namespace Sample.Services
 
         public async Task<TalkSummary[]> GetTalksBySpeaker(string speaker, int show)
         {
-            throw new NotImplementedException("TODO: Implement GetTalksBySpeaker");
+            using (var session = store.OpenAsyncSession())
+            {
+                var actualPage = Math.Max(0, show - 1);
+
+                var talks = await session.Query<Talk, Talks_BySpeaker>()
+                    .Where(t => t.Speaker == speaker)
+                    .Skip(actualPage * Constants.PageSize)
+                    .Take(Constants.PageSize)
+                    .Select(t => new TalkSummary()
+                    {
+                        Id = t.Id,
+                        Headline = t.Headline,
+                        Description = t.Description,
+                        Published = t.Published,
+                        Speaker = t.Speaker,
+                        SpeakerName = RavenQuery.Load<Speaker>(t.Speaker).Name
+                    })
+                    .ToListAsync();
+
+                return talks.ToArray();
+            }
         }
 
         public async Task<TalkSummary[]> GetTalksByTag(string tag, int show)
         {
-            throw new NotImplementedException("TODO: Implement GetTalksByTag");
+            using (var session = store.OpenAsyncSession())
+            {
+                var actualPage = Math.Max(0, show - 1);
+
+                var talks = await session.Query<Talk, Talks_ByTags>()
+                    .Where(t => t.Tags.Contains(tag))
+                    .Skip(actualPage * Constants.PageSize)
+                    .Take(Constants.PageSize)
+                    .Select(t => new TalkSummary()
+                    {
+                        Id = t.Id,
+                        Headline = t.Headline,
+                        Description = t.Description,
+                        Published = t.Published,
+                        Speaker = t.Speaker,
+                        SpeakerName = RavenQuery.Load<Speaker>(t.Speaker).Name
+                    })
+                    .ToListAsync();
+
+                return talks.ToArray();
+            }
         }
 
         public async Task<TalkSummary[]> SearchTalks(string search, int page = 1)

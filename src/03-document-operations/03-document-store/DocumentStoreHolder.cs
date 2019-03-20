@@ -2,8 +2,10 @@ using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Raven.Client.Documents;
+using Raven.Client.Documents.Indexes;
 using Raven.Client.ServerWide;
 using Raven.Client.ServerWide.Operations;
+using Sample.Indexes;
 using Sample.Models;
 using Sample.Services;
 
@@ -22,7 +24,7 @@ namespace Sample
         {
             this._logger = logger;
             var settings = ravenSettings.Value;
-            
+
             Store = new DocumentStore()
             {
                 Urls = new[] { settings.Url },
@@ -36,11 +38,17 @@ namespace Sample
 
             // Create if not exists
             CreateDatabaseIfNotExists();
+
+            // Create static index
+            IndexCreation.CreateIndexes(
+                typeof(Talks_BySpeaker).Assembly,
+                Store
+            );
         }
 
         public IDocumentStore Store { get; }
-        
-#region Nothing to see here!
+
+        #region Nothing to see here!
 
         private void CreateDatabaseIfNotExists()
         {
@@ -90,5 +98,5 @@ namespace Sample
             }
         }
     }
-#endregion
+    #endregion
 }
