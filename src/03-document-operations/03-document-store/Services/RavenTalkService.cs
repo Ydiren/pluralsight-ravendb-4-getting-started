@@ -128,7 +128,14 @@ namespace Sample.Services
 
         public async Task<TagTalkStats[]> GetTagTalkStats()
         {
-            throw new NotImplementedException("TODO: Implement GetTagTalkStats");
+            using (var session = store.OpenAsyncSession())
+            {
+                var stats = await session.Query<TagTalkStats, Talks_TagStats>()
+                                         .Take(1024)
+                                         .ToListAsync();
+
+                return stats.ToArray();
+            }
         }
 
         public async Task<(UpdatedTalk Talk, string Version)> GetTalkForEditing(string id)
